@@ -68,7 +68,7 @@ public abstract partial class SharedGunSystem : EntitySystem
     [Dependency] protected readonly SharedPhysicsSystem Physics = default!;
     [Dependency] protected readonly SharedProjectileSystem Projectiles = default!;
     [Dependency] protected readonly SharedTransformSystem TransformSystem = default!;
-    [Dependency] protected readonly TagSystem TagSystem = default!;
+    [Dependency] private readonly TagSystem _tagSystem = default!;
     [Dependency] protected readonly ThrowingSystem ThrowingSystem = default!;
     [Dependency] private   readonly UseDelaySystem _useDelay = default!;
     [Dependency] private readonly EntityWhitelistSystem _whitelistSystem = default!;
@@ -516,6 +516,16 @@ public abstract partial class SharedGunSystem : EntitySystem
 
         cartridge.Spent = spent;
         Appearance.SetData(uid, AmmoVisuals.Spent, spent);
+
+        // Add Cartridge tag if not present when spent
+        if (spent && TryComp<TagComponent>(uid, out var tag))
+        {
+
+            if (!_tagSystem.HasTag(uid, "Cartridge"))
+            {
+                _tagSystem.AddTag(uid, "Cartridge");
+            }
+        }
     }
 
     /// <summary>

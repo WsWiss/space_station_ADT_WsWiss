@@ -6,7 +6,6 @@
   components:
   - type: Tag
     tags:
-      - Cartridge
       - ADTCartridgeMagnumLesser
   - type: CartridgeAmmo
     proto: ADTBulletMagnumLesser

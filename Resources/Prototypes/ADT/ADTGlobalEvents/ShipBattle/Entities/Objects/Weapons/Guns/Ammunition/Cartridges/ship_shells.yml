@@ -5,7 +5,6 @@
   components:
   - type: Tag
     tags:
-    - Cartridge
     - ADTShipBattleCartridge30mm
   - type: CartridgeAmmo
     proto: ADTShipBattleBullet30mm

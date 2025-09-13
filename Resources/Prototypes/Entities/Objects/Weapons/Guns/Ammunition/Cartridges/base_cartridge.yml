@@ -27,9 +27,6 @@
       behaviors:
       - !type:DoActsBehavior
         acts: [ "Destruction" ]
-  - type: Tag
-    tags:
-    - Cartridge
   - type: Item
     size: Tiny
   - type: SpaceGarbage

@@ -4,9 +4,6 @@
   name: bibis
   abstract: true
   components:
-  - type: Tag
-    tags:
-      - Cartridge
   - type: CartridgeAmmo
     deleteOnSpawn: true
   - type: Sprite
