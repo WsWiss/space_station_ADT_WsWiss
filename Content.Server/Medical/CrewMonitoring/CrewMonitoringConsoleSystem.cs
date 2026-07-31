@@ -246,6 +246,10 @@ public sealed class CrewMonitoringConsoleSystem : EntitySystem
             component.ConnectedSensors = new();
             component.LastReferenceFrame = null;
             component.LastServerUid = null;
+            component.LastServerName = string.Empty;
+            component.LastServerAddress = string.Empty;
+            component.LastGridName = string.Empty;
+            component.LastGridUid = null;
             component.LastPacketTime = TimeSpan.Zero;
             component.OfflineStateSent = true;
             component.KnownAlertStates.Clear();
@@ -553,18 +557,46 @@ public sealed class CrewMonitoringConsoleSystem : EntitySystem
     // ADT-Tweak Start - New Monitor: server update / alert BUI handlers
     private void OnServerTerminating(EntityUid uid, CrewMonitoringServerComponent component, ref EntityTerminatingEvent args)
     {
-        var subscribers = component.SubscriberConsoles.ToArray();
+        var netEntity = GetNetEntity(uid);
         _crewServers.ClearSubscribers(component);
 
-        foreach (var consoleUid in subscribers)
+        var query = EntityQueryEnumerator<CrewMonitoringConsoleComponent>();
+        while (query.MoveNext(out var consoleUid, out var console))
         {
-            if (!TryComp<CrewMonitoringConsoleComponent>(consoleUid, out var console))
+            var known = false;
+            foreach (var entry in console.CachedServers)
+            {
+                if (entry.NetEntity != netEntity)
+                    continue;
+
+                entry.IsOnline = false;
+                known = true;
+            }
+
+            var wasSelected = console.SelectedServerUid == uid;
+            if (wasSelected)
+            {
+                console.SelectedServerUid = null;
+                console.LastServerUid = null;
+                console.LastServerName = string.Empty;
+                console.LastServerAddress = string.Empty;
+                console.LastGridName = string.Empty;
+                console.LastGridUid = null;
+                console.LastReferenceFrame = null;
+                console.ConnectedSensors = new();
+                console.LastPacketTime = TimeSpan.Zero;
+                console.OfflineStateSent = true;
+                console.KnownAlertStates.Clear();
+                console.NextCritAlertTime = TimeSpan.Zero;
+                console.CritAlertResyncPending = false;
+            }
+
+            if (!known && !wasSelected)
                 continue;
 
-            console.SelectedServerUid = null;
-            console.LastServerUid = null;
-            console.LastReferenceFrame = null;
-            console.OfflineStateSent = true;
+            // Keep the forced offline mark for this UI push.
+            console.ServersListDirty = false;
+            console.LastServersRefresh = _gameTiming.CurTime;
             UpdateUserInterface(consoleUid, console);
         }
     }
@@ -890,6 +922,8 @@ public sealed class CrewMonitoringConsoleSystem : EntitySystem
         foreach (var entry in component.CachedServers)
         {
             if (!TryGetEntity(entry.NetEntity, out var serverUid) ||
+                TerminatingOrDeleted(serverUid.Value) ||
+                EntityManager.IsQueuedForDeletion(serverUid.Value) ||
                 !TryComp<CrewMonitoringServerComponent>(serverUid.Value, out var serverComp) ||
                 !TryComp(serverUid.Value, out TransformComponent? serverXform) ||
                 !IsServerInRange(consoleUid, serverUid.Value))

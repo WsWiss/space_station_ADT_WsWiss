@@ -454,8 +454,10 @@ public sealed partial class CrewMonitoringNavMapControl : NavMapControl
 
         if (!_freezeGridTransforms)
         {
+            if (!CaptureFrozenTransforms())
+                return;
+
             _freezeGridTransforms = true;
-            CaptureFrozenTransforms();
             return;
         }
 
@@ -676,19 +678,19 @@ public sealed partial class CrewMonitoringNavMapControl : NavMapControl
         _cachedGridQueryTime = now;
     }
 
-    private void CaptureFrozenTransforms()
+    private bool CaptureFrozenTransforms()
     {
         ClearFrozenTransforms();
 
         if (MapUid == null ||
             !EntManager.TryGetComponent<TransformComponent>(MapUid.Value, out var frameXform))
         {
-            return;
+            return false;
         }
 
         var mapId = frameXform.MapID;
         if (!TryGetCoverage(mapId, out var coverageCenter, out var coverageRange))
-            return;
+            return false;
 
         RefreshGridQuery(mapId, coverageCenter, coverageRange);
 
@@ -715,6 +717,8 @@ public sealed partial class CrewMonitoringNavMapControl : NavMapControl
 
             _frozenBlipWorldPositions[entity] = mapPosition.Position;
         }
+
+        return true;
     }
 
     private void ClearFrozenTransforms()
@@ -723,6 +727,8 @@ public sealed partial class CrewMonitoringNavMapControl : NavMapControl
         _frozenBlipWorldPositions.Clear();
         _frozenMapId = MapId.Nullspace;
         _frozenCoverageRange = 0f;
+        _frozenCoverageCenter = Vector2.Zero;
+        _frozenWorldToFrame = Matrix3x2.Identity;
     }
 
     /// <summary>
